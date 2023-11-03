@@ -21,17 +21,19 @@ classdef InverseKinematic
                sin(theta)*sin(alpha) cos(theta)*sin(alpha) cos(alpha) cos(alpha)*d;
                0 0 0 1];
        end
-       function T = Transform(self, from, to)
+       function T = Transform(self, from, to, row)
                T = eye(4);
                if from <= to
                    from = from + 1;
                    for i = from:to
-                       T = T * self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.theta(i));
+                       % i
+                       self.theta(row,i)
+                       T = T * inv(self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.theta(row,i)));
                    end
                elseif from > to
                    to = to + 1;
                    for i = from:-1:to
-                       T = T * inv(self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.theta(i)));
+                       T = T * self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.theta(i));
                    end
            end
        end
@@ -45,7 +47,7 @@ classdef InverseKinematic
            % Ergebnisse
            T60 = TranslationXYZ(x, y, z);
            T60(1:3, 1:3) = eul2rotm([roll, pitch, yaw]);
-           T06 = inv(T60);
+           % T06 = inv(T60);
 
            % points derived from T60
            P60 = T60 * [0; 0; 0; 1];
@@ -67,6 +69,8 @@ classdef InverseKinematic
            % storing theta1 - Placeholder for selection method
            self.theta(1:2, 1) = theta1;
            self.theta(3:4, 1) = theta1;
+           self.theta(5:6, 1) = theta1;
+           self.theta(7:8, 1) = theta1;
 
            % Calculating theta5 - Equation 12 - 4 Solutions
            theta5 = CustAcos((P60(1)*sin(theta1) ...
@@ -76,6 +80,7 @@ classdef InverseKinematic
 
            % storing theta5 - Placeholder for selection method
            self.theta(1:4, 5) = theta5;
+           self.theta(5:8, 5) = theta5;
            
 
            % theta1 to match dimensions with theta5 solutions
@@ -91,13 +96,15 @@ classdef InverseKinematic
 
            % storing theta6
            self.theta(1:4,6) = theta6;
-
+           self.theta(5:8,6) = theta6;
            self.theta
            
            % Calculating theta3
-           T10 = self.Transform(1,0);
-           T54 = self.Transform(5,4);
-           T41 = T10 * T60 * T54;
+           row = 4;
+           T01 = self.Transform(0,1,row)
+           T45 = self.Transform(4,5,row)
+           T56 = self.Transform(5,6,row)
+           T41 = T01 * T60 * T56 * T45
            P41 = T41 * [0;0;0;1];
            
            % Equation 19 - 2 Solutions
@@ -124,8 +131,8 @@ classdef InverseKinematic
            self.theta(2) = theta2(1);
 
            % Calculating theta4
-           T02 = self.Transform(0,2);
-           T46 = self.Transform(4,6);
+           T02 = self.Transform(0,2,row);
+           T46 = self.Transform(4,6,row);
            T43 = T02 * T60 * T46;
 
            % T34 = self.Transform(4,4);
