@@ -6,8 +6,8 @@ classdef InverseKinematic < handle
     properties
         % Set 1 - Paper
         alpha = [0; pi/2; 0; 0; pi/2; -pi/2];
-        a = [0; 0; -0.24355; -0.2132; 0; 0];
-        d = [0.15185; 0; 0; 0.13105; 0.08535; 0.0921];
+        a = [0; 0; -0.24365; -0.21325; 0; 0];
+        d = [0.1519; 0; 0; 0.11235; 0.08535; 0.0819];
         theta = zeros(8,6);
         previousThetas = zeros(1,6);
         currentThetas = zeros(1,6);
@@ -37,7 +37,7 @@ classdef InverseKinematic < handle
             end
         end
 
-        function closetSolution(self)
+        function closestSolution(self)
             weights = [6 5 4 3 2 1];
             deviations = sum(((self.theta - self.previousThetas).*weights) .^2, 2);
             [~, indexClosestSolution] = min(deviations);
@@ -81,6 +81,8 @@ classdef InverseKinematic < handle
             self.theta(5:6, 1) = theta1(1);
             self.theta(7:8, 1) = theta1(2);
 
+            self.theta = real(self.theta);
+
             % Calculating theta5 - Equation 12 - 4 Solutions
             for row = 1:2:(size(self.theta,1))
                 theta5 = CustAcos((P60(1)*sin(self.theta(row, 1)) ...
@@ -92,6 +94,8 @@ classdef InverseKinematic < handle
                 self.theta(row:row+1, 5) = theta5;
             end
 
+            self.theta = real(self.theta);
+
             % Calculating theta6 - Equation 1
             theta6 = atan2(...
                 (-X06(2) * sin(self.theta(:, 1)) + Y06(2)*cos(self.theta(:, 1))) ...
@@ -102,6 +106,8 @@ classdef InverseKinematic < handle
 
             % storing theta6
             self.theta(:,6) = theta6;
+
+            self.theta = real(self.theta);
 
             % Calculating theta3
             for row = 1:(size(self.theta,1)/2)
@@ -122,6 +128,8 @@ classdef InverseKinematic < handle
                 % storing theta3 - Placeholder for selection method
                 self.theta(row, 3) = theta3(1);
                 self.theta(row + 4, 3) = theta3(2);
+
+                self.theta = real(self.theta);
 
                 % Calculating theta4
                 for ink = 0:1
@@ -149,10 +157,15 @@ classdef InverseKinematic < handle
 
                     % storing theta4
                     self.theta(row + (4 * ink), 4) = theta4;
+
+                    self.theta = real(self.theta);
                 end
             end
-            self.closetSolution();
+            self.closestSolution();
             % self
         end % end function get_thetas
+        function currentThetas = getCurrentThetaDeg(self)
+            currentThetas = rad2deg(self.currentThetas);
+        end
     end % end methods
 end % end classdef
