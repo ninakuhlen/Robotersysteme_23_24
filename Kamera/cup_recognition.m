@@ -1,40 +1,64 @@
-cam = webcam("Intel(R) RealSense(TM) Depth Camera 435 with RGB Module RGB");
+% Add the RealSense directory to the MATLAB path
+addpath('./+realsense/');
+
+% Initialize YOLOv4 object detector
 yolov4 = yolov4ObjectDetector("csp-darknet53-coco");
 
+% Make Pipeline object to manage streaming
+pipe = realsense.pipeline();
+profile = pipe.start();  % Start the pipeline here
+
+% Create an align object to align depth frames to color frames
+align_to = realsense.stream.color;
+align = realsense.align(align_to);
+
 while true
-    % Erfassen Sie ein Bild von der Webcam
-    img = snapshot(cam);
+    % Get frames and align them
+    fs = pipe.wait_for_frames();
+    aligned_frames = align.process(fs);
 
-    % Führen Sie die Objekterkennung durch
-    detections = detect(yolov4, img);
-    detectionSize = size(detections);
-    cupDetections = reshape(detections, detectionSize(1), []);
-    
-    % Annahme: detections hat mindestens 4 Spalten
-    validColumns = size(detections, 2);
-    columnsToUse = min(4, validColumns);
-    
-    % Überprüfen Sie, ob es überhaupt erkannte Objekte gibt und markieren Sie nur Tassen
-    %if ~isempty(detections)
-        % Filtern basierend auf Klassennamen und Vertrauenswert
-     %   cupIdx = strcmp(detections(:, 1), 'cup') & detections(:, 2) > 0.5;  % Annahme: Vertrauenswert > 0.5
-      %  cupDetections = detections(cupIdx, :);
-    
-        % Zeigen Sie das Bild mit den erkannten Tassen an
-        label = ["cup"];
-        %position = [23 373 60 66; 35 185 77 81; 77 107 59 26];
-        img = insertObjectAnnotation(img, "rectangle", cupDetections, label); %, FontColor="black") %cupDetections(:, 1:4) cupDetections(:, 1));
-    %end
-    
-    % Anzeigen des Bilds
-    imshow(img);
+    color_frame = aligned_frames.get_color_frame();
+    depth_frame = aligned_frames.get_depth_frame();
 
-    % Beenden Sie die Schleife mit der 'ESC'-Taste
-    k = waitforbuttonpress;
-    if k == 1
-        break;
+    % Extract color and depth data
+    color_data = color_frame.get_data();
+    color_img = permute(reshape(color_data',[3,color_frame.get_width(),color_frame.get_height()]),[3 2 1]);
+
+    % Detect the cup and get its center location
+    cupCenter = detect_cup(color_img, yolov4);
+    disp(cupCenter);
+
+    % If a cup was detected, find its depth
+    if ~isempty(cupCenter)
+        cupDepth = detect_depth(depth_frame, cupCenter);
+        disp(['Depth of the cup: ', num2str(cupDepth), ' meters']);
+
+        % Annotate and display the image
+        %annotated_img = insertObjectAnnotation(color_img, "rectangle", detections, "cup");
+        imshow(color_img);
+        hold on;
+        plot(cupCenter(1), cupCenter(2), 'r+', 'MarkerSize', 10, 'LineWidth', 2);
+        hold off;
     end
 end
 
-% Stoppen Sie die Webcam
-clear('cam');
+function cupCenter = detect_cup(img, yolov4)
+    cupCenter = [];
+
+    % Perform object detection
+    detections = detect(yolov4, img);
+
+    % Check if any cups were detected
+    if ~isempty(detections)
+        % Assuming detections are [x, y, width, height]
+        % Calculate the center of the first detected cup
+        xCenter = detections(1, 1) + detections(1, 3) / 2;
+        yCenter = detections(1, 2) + detections(1, 4) / 2;
+        cupCenter = [xCenter, yCenter];
+    end
+end
+
+function cupDepth = detect_depth(depth, cupLocation)
+    % Get the distance at the specific point
+    cupDepth = depth.get_distance(cupLocation(1), cupLocation(2));
+end
