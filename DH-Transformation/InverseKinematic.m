@@ -7,14 +7,16 @@ classdef InverseKinematic < handle
         % Set 1 - Paper
         alpha = [0; pi/2; 0; 0; pi/2; -pi/2];
         a = [0; 0; -0.24365; -0.21325; 0; 0];
-        d = [0.1519; 0; 0; 0.11235; 0.08535; 0.0819];
-        theta = zeros(8,6);
+
+        %         tcp_offset = 0.115;
+        d = [0.1519; 0; 0; 0.11235; 0.08535; (0.0819 + 0.115)];
+        thetas = zeros(8,6);
         previousThetas = zeros(1,6);
         currentThetas = zeros(1,6);
     end
 
     methods
-        function DH = DHTransform(self, alpha, a, d, theta)
+        function DH = DHTransform(~, alpha, a, d, theta)
             DH = [cos(theta) -sin(theta) 0 a;
                 sin(theta)*cos(alpha) cos(theta)*cos(alpha) -sin(alpha) -sin(alpha)*d;
                 sin(theta)*sin(alpha) cos(theta)*sin(alpha) cos(alpha) cos(alpha)*d;
@@ -26,27 +28,36 @@ classdef InverseKinematic < handle
             if from <= to
                 from = from + 1;
                 for i = from:to
-                    self.theta(row,i);
-                    T = T * inv(self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.theta(row,i)));
+                    self.thetas(row,i);
+                    T = T * inv(self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.thetas(row,i)));
                 end
             elseif from > to
                 to = to + 1;
                 for i = from:-1:to
-                    T = T * self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.theta(row,i));
+                    T = T * self.DHTransform(self.alpha(i), self.a(i), self.d(i), self.thetas(row,i));
                 end
             end
         end
 
         function closestSolution(self)
+            % to prevent unwanted movements of robot, restrain angles of q2
+            % to negative values
+            theta2_is_negative = (self.thetas(:, 2) < 0);
+            possible_thetas = self.thetas(theta2_is_negative, :);
+
+            if isempty(possible_thetas)
+                error("No possible solution found, all q2 angles are positive.")
+            end
+
             weights = [6 5 4 3 2 1];
-            deviations = sum(((self.theta - self.previousThetas).*weights) .^2, 2);
+            deviations = sum(((possible_thetas - self.previousThetas).*weights) .^2, 2);
             [~, indexClosestSolution] = min(deviations);
 
-            self.currentThetas = self.theta(indexClosestSolution, :);
+            self.currentThetas = possible_thetas(indexClosestSolution, :);
             self.previousThetas = self.currentThetas;
         end
 
-        function get_thetas(self, x, y, z, roll, pitch, yaw)
+        function get_thetas(self, translation_xyz, rotation)
             % Attention! The variables use the following naming
             % convention:
             % * T06 is the transformation from frame 0 to frame 6
@@ -54,8 +65,8 @@ classdef InverseKinematic < handle
 
             % T06 ist eigentlich der Input! Das erzeugt allerdings komplexe
             % Ergebnisse
-            T60 = TranslationXYZ(x, y, z);
-            T60(1:3, 1:3) = eul2rotm([roll, pitch, yaw]);
+            T60 = TranslationXYZ(translation_xyz);
+            T60(1:3, 1:3) = eul2rotm(rotation);
             T06 = inv(T60);
 
             % points derived from T60
@@ -76,41 +87,41 @@ classdef InverseKinematic < handle
                 + pi/2;
 
             % storing theta1 - Placeholder for selection method
-            self.theta(1:2, 1) = theta1(1);
-            self.theta(3:4, 1) = theta1(2);
-            self.theta(5:6, 1) = theta1(1);
-            self.theta(7:8, 1) = theta1(2);
+            self.thetas(1:2, 1) = theta1(1);
+            self.thetas(3:4, 1) = theta1(2);
+            self.thetas(5:6, 1) = theta1(1);
+            self.thetas(7:8, 1) = theta1(2);
 
-            self.theta = real(self.theta);
+            self.thetas = real(self.thetas);
 
             % Calculating theta5 - Equation 12 - 4 Solutions
-            for row = 1:2:(size(self.theta,1))
-                theta5 = CustAcos((P60(1)*sin(self.theta(row, 1)) ...
-                    - P60(2)*cos(self.theta(row, 1)) ...
+            for row = 1:2:(size(self.thetas,1))
+                theta5 = CustAcos((P60(1)*sin(self.thetas(row, 1)) ...
+                    - P60(2)*cos(self.thetas(row, 1)) ...
                     - self.d(4)) ...
                     ./ self.d(6));
 
                 % storing theta5 - Placeholder for selection method
-                self.theta(row:row+1, 5) = theta5;
+                self.thetas(row:row+1, 5) = theta5;
             end
 
-            self.theta = real(self.theta);
+            self.thetas = real(self.thetas);
 
             % Calculating theta6 - Equation 1
             theta6 = atan2(...
-                (-X06(2) * sin(self.theta(:, 1)) + Y06(2)*cos(self.theta(:, 1))) ...
-                ./sin(self.theta(:, 5)), ...
-                (X06(1) * sin(self.theta(:, 1)) - Y06(1)*cos(self.theta(:, 1))) ...
-                ./sin(self.theta(:, 5))...
+                (-X06(2) * sin(self.thetas(:, 1)) + Y06(2)*cos(self.thetas(:, 1))) ...
+                ./sin(self.thetas(:, 5)), ...
+                (X06(1) * sin(self.thetas(:, 1)) - Y06(1)*cos(self.thetas(:, 1))) ...
+                ./sin(self.thetas(:, 5))...
                 );
 
             % storing theta6
-            self.theta(:,6) = theta6;
+            self.thetas(:,6) = theta6;
 
-            self.theta = real(self.theta);
+            self.thetas = real(self.thetas);
 
             % Calculating theta3
-            for row = 1:(size(self.theta,1)/2)
+            for row = 1:(size(self.thetas,1)/2)
                 T01 = self.Transform(0,1,row);
                 T45 = self.Transform(4,5,row);
                 T56 = self.Transform(5,6,row);
@@ -126,10 +137,10 @@ classdef InverseKinematic < handle
                     );
 
                 % storing theta3 - Placeholder for selection method
-                self.theta(row, 3) = theta3(1);
-                self.theta(row + 4, 3) = theta3(2);
+                self.thetas(row, 3) = theta3(1);
+                self.thetas(row + 4, 3) = theta3(2);
 
-                self.theta = real(self.theta);
+                self.thetas = real(self.thetas);
 
                 % Calculating theta4
                 for ink = 0:1
@@ -138,11 +149,11 @@ classdef InverseKinematic < handle
                         -P41(3), -P41(1) ...
                         ) ...
                         - asin( ...
-                        -self.a(4)* sin(self.theta(row + (4 * ink),3)) ...
+                        -self.a(4)* sin(self.thetas(row + (4 * ink),3)) ...
                         / norm([P41(1); P41(3)]) ...
                         );
 
-                    self.theta(row + (4 * ink), 2) = theta2;
+                    self.thetas(row + (4 * ink), 2) = theta2;
 
                     T12 = self.Transform(1,2,row + (4 * ink));
                     T23 = self.Transform(2,3,row + (4 * ink));
@@ -156,9 +167,9 @@ classdef InverseKinematic < handle
                         );
 
                     % storing theta4
-                    self.theta(row + (4 * ink), 4) = theta4;
+                    self.thetas(row + (4 * ink), 4) = theta4;
 
-                    self.theta = real(self.theta);
+                    self.thetas = real(self.thetas);
                 end
             end
             self.closestSolution();
