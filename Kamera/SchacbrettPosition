@@ -1,0 +1,125 @@
+%% Methode Ecke als Referenz 
+
+% Pfad zum Bild mit dem Schachbrettmuster
+imagePath = 'C:\Users\William\Videos\iVCam\20231202123301.jpg';
+
+% Lade das Bild
+inputImage = imread(imagePath);
+
+% Bild entzerren
+undistortedImage = undistortImage(inputImage, cameraParams);
+
+% Detektion der Schachbrettmusterpunkte im entzerrten Bild
+[imagePoints, boardSize] = detectCheckerboardPoints(undistortedImage);
+
+% Überprüfe, ob Punkte erkannt wurden
+if isempty(imagePoints)
+    error('Es wurden keine Schachbrettmusterpunkte erkannt.');
+end
+
+% Anzeige der erkannten Schachbrettmusterpunkte im entzerrten Bild
+figure;
+imshow(undistortedImage);
+hold on;
+
+% Markiere den Ursprungspunkt im Schachbrettmuster in Gelb
+plot(imagePoints(1, 1), imagePoints(1, 2), 'yo', 'MarkerSize', 10);
+
+% Die anderen Punkte in Rot
+plot(imagePoints(2:end, 1), imagePoints(2:end, 2), 'ro', 'MarkerSize', 10);
+title('Erkannte Schachbrettmusterpunkte im entzerrten Bild');
+
+% Generiere die Weltkoordinaten der Schachbrettmusterpunkte
+squareSize = 30;  % Seitenlänge der Quadrate auf dem Schachbrett in Millimetern
+worldPoints = generateCheckerboardPoints(boardSize, squareSize);
+
+% Extrinsische Parameter (Kameraposition) berechnen
+[R, t] = extrinsics(imagePoints, worldPoints, cameraParams.Intrinsics);
+
+% Anzeige der Kameraparameter
+%disp('Intrinsische Kameraparameter:');
+%disp(cameraParams.Intrinsics);
+
+%disp('Extrinsische Kameraparameter:');
+%disp('Rotation Matrix (R):');
+%disp(R);
+
+%disp('Translation Vector (t):');
+%disp(t);
+
+% Berechnung des Weltkoordinatenursprungs in Kamera-Koordinaten
+worldOriginInCamera = -R \ t.';
+
+% Ausgabe der Weltkoordinatenursprung in Kamera-Koordinaten
+disp('Weltkoordinatenursprung in Kamera-Koordinaten:');
+disp(worldOriginInCamera);
+
+% Entfernung zwischen Schachbrett und Kamera
+ distanceToChessboard = norm(t);
+
+% Ausgabe der Entfernung
+disp(['Entfernung zwischen Schachbrett und Kamera: ', num2str(distanceToChessboard), ' mm']);
+
+
+%% Methode mit Bondingsbox
+
+% Pfad zum Bild mit dem Schachbrettmuster
+imagePath = 'C:\Users\William\Videos\iVCam\20231202123301.jpg';
+
+% Lade das Bild
+inputImage = imread(imagePath);
+
+% Bild entzerren
+undistortedImage = undistortImage(inputImage, cameraParams);
+
+% Detektion der Schachbrettmusterpunkte im entzerrten Bild
+[imagePoints, boardSize] = detectCheckerboardPoints(undistortedImage);
+
+% Überprüfe, ob Punkte erkannt wurden
+if isempty(imagePoints)
+    error('Es wurden keine Schachbrettmusterpunkte erkannt.');
+end
+
+% Berechne den Bereich um das gesamte Schachbrettmuster
+minX = min(imagePoints(:, 1));
+maxX = max(imagePoints(:, 1));
+minY = min(imagePoints(:, 2));
+maxY = max(imagePoints(:, 2));
+
+% Bounding Box um das gesamte Schachbrettmuster
+boundingBox = [minX, minY, maxX - minX, maxY - minY];
+
+% Anzeige der Bounding Box im entzerrten Bild
+figure;
+imshow(undistortedImage);
+hold on;
+rectangle('Position', boundingBox, 'EdgeColor', 'y', 'LineWidth', 2);
+
+% Mitte der Bounding Box
+centerOfBoundingBox = [boundingBox(1) + boundingBox(3)/2, boundingBox(2) + boundingBox(4)/2];
+
+% Anzeige der Mitte im Bild
+plot(centerOfBoundingBox(1), centerOfBoundingBox(2), 'go', 'MarkerSize', 10);
+
+% Generiere die Weltkoordinaten der Schachbrettmusterpunkte
+squareSize = 30;  % Seitenlänge der Quadrate auf dem Schachbrett in Millimetern
+worldPoints = generateCheckerboardPoints(boardSize, squareSize);
+
+% Extrinsische Parameter (Kameraposition) berechnen
+[rotationMatrix, translationVector] = extrinsics(imagePoints, worldPoints, cameraParams.Intrinsics);
+R = rotationMatrix;
+t = translationVector';
+
+% Bildverzerrungen korrigieren
+undistortedCenter = undistortPoints(centerOfBoundingBox, cameraParams);
+
+% Berechnung des Abstands zwischen Kamera und Mitte der Bounding Box
+distanceToBoundingBoxCenter = norm(t - [undistortedCenter, 0]);
+
+% Ausgabe der Ergebnisse
+disp(['Abstand zwischen Kamera und Mitte der Bounding Box: ', num2str(distanceToBoundingBoxCenter), ' mm']);
+disp('Koordinaten der Kamera zur Mitte der Bounding Box:');
+
+disp(['Z: ', num2str(t(3)), ' mm']);
+disp(['y: ', num2str(t(2)), ' mm']);
+disp(['x: ', num2str(t(1)), ' mm']);
