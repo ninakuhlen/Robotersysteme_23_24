@@ -12,7 +12,7 @@ profile = pipe.start();  % Start the pipeline here
 align_to = realsense.stream.color;
 align = realsense.align(align_to);
 
-% Extrahieren Sie die intrinsischen Parameter aus dem Farbstream
+% Extract the intrinsic parameters from the color stream
 color_stream = profile.get_stream(realsense.stream.color).as('video_stream_profile');
 intrinsics = color_stream.get_intrinsics();
 
@@ -44,7 +44,29 @@ while true
         % Annotate and display the image
         imshow(color_img)
         hold on;
+        
+        % Plot the cup's center
         plot(cupCenter(1), cupCenter(2), 'r+', 'MarkerSize', 10, 'LineWidth', 2);
+        
+        % Frame for measurement (adjust frameSize as needed)
+        frameSize = 100; % Length of the axes in pixels
+        
+        % Determine the center of the image
+        imageWidth = color_frame.get_width();
+        imageHeight = color_frame.get_height();
+        imageCenterX = imageWidth / 2;
+        imageCenterY = imageHeight / 2;
+        
+        % Draw x-axis in red from the center of the image
+        line([imageCenterX - frameSize, imageCenterX + frameSize], [imageCenterY, imageCenterY], 'Color', 'red', 'LineWidth', 2);
+        
+        % Draw y-axis in green from the center of the image
+        line([imageCenterX, imageCenterX], [imageCenterY - frameSize, imageCenterY + frameSize], 'Color', 'green', 'LineWidth', 2);
+        
+        % Optionally add labels
+        text(imageCenterX + frameSize, imageCenterY, 'X', 'Color', 'red', 'FontSize', 12);
+        text(imageCenterX, imageCenterY + frameSize, 'Y', 'Color', 'green', 'FontSize', 12);
+        
         hold off;
     end
 end
@@ -71,13 +93,13 @@ function cupDepth = detect_depth(depth, cupLocation)
 end
 
 function [worldX, worldY, worldZ] = depth_to_world(intrinsics, pixelX, pixelY, depth)
-    % Umrechnung der Pixelkoordinaten in Weltkoordinaten
-    fx = intrinsics.fx;  % Brennweite in x-Richtung
-    fy = intrinsics.fy;  % Brennweite in y-Richtung
-    cx = intrinsics.ppx; % Hauptpunkt x-Koordinate
-    cy = intrinsics.ppy; % Hauptpunkt y-Koordinate
+    % Conversion of pixel coordinates into world coordinates
+    fx = intrinsics.fx;  % Focal length in x-direction
+    fy = intrinsics.fy;  % Focal length in y-direction
+    cx = intrinsics.ppx; % Principal point x-coordinate
+    cy = intrinsics.ppy; % Principal point y-coordinate
 
-    % Umrechnung unter Verwendung der intrinsischen Kameraparameter
+    % Conversion using the intrinsic camera parameters
     worldX = (pixelX - cx) * depth / fx;
     worldY = (pixelY - cy) * depth / fy;
     worldZ = depth;
