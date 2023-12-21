@@ -28,7 +28,7 @@ clear all
 load('../../Camera_Kalibrierung\Cam_Param_1.mat'); % Load camera parameters
 
 % Read the image of the checkerboard
-image = imread('C:\Users\ninak\Documents\Westfälische Hochschule\Master Robotik\23_24_WS\Robotersysteme\repository\Kamera\Checkerboard\Images\04_lab_checkerboard_Color.png');
+image = imread('.\Images\04_lab_checkerboard_Color.png');
 
 %__________________________________________________
 

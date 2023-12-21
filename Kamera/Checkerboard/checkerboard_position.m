@@ -1,6 +1,6 @@
 % Load camera parameters (replace 'cameraParams.mat' with your file)
 % load('../../../Camera_Kalibrierung/Cam_Calib_Nina_HR.mat');
-load('Camera_Kalibrierung\cam_params_nina_medium_resolution.mat') %-----> insert camera parameters (from calibration) here <----
+load('../../Camera_Kalibrierung\cam_params_nina_medium_resolution.mat') %-----> insert camera parameters (from calibration) here <----
 
 % Display the variables in the loaded file
 whos
@@ -8,7 +8,7 @@ whos
 
 % Read the image of the checkerboard
 %image = imread('./Images/checkerboard_Color.png'); % replace with your image file -----> insert file of checkerboard image <----
-image = imread('C:\Users\ninak\Documents\Westfälische Hochschule\Master Robotik\23_24_WS\Robotersysteme\repository\Kamera\Checkerboard\Images\checkerboard_Color.png');
+image = imread('.\Images\checkerboard_Color.png');
 
 % Berechnen Sie das Zentrum des Bildes
 [imageHeight, imageWidth, ~] = size(image);
