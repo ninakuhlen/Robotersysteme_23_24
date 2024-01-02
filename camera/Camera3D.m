@@ -9,18 +9,26 @@ classdef Camera3D < handle
         align
     end
     methods
-        function object = Camera3D(cameraParametersPath, imageWidth, imageHeight)
+        function object = Camera3D(cameraParametersPath)
 
             % load and store camera parameters
-            object.parameters = load(cameraParametersPath, cameraParams);
+            load(cameraParametersPath);
+            object.parameters = cameraParams;
+
+            cameraParams.Intrinsics
+
+            width = cameraParams.Intrinsics.ImageSize(2);
+            height = cameraParams.Intrinsics.ImageSize(1);
+
+            clear cameraParams;
 
             % set camera resolution to 1280 x 720 px for color and depth camera
             object.configuration = realsense.config();
-            object.configuration.enable_stream(realsense.stream.color,-1, imageWidth, imageHeight, realsense.format.rgb8, 0);
-            object.configuration.enable_stream(realsense.stream.depth, imageWidth, imageHeight, realsense.format.z16, 0);
+            object.configuration.enable_stream(realsense.stream.color,-1, width, height, realsense.format.rgb8, 0);
+            object.configuration.enable_stream(realsense.stream.depth, width, height, realsense.format.z16, 0);
 
             % align depth to color image
-            object.align = realsense.align(realsense.stream.depth);
+            object.align = realsense.align(realsense.stream.color);
 
             % create Pipeline object to manage streaming
             object.pipe = realsense.pipeline();
@@ -40,7 +48,7 @@ classdef Camera3D < handle
         function [colorImage, depth] = snapshot(self)
 
             % start streaming on an arbitrary camera with default settings
-            object.pipe.start(object.configuration);
+            self.pipe.start(self.configuration);
 
             % discard the first couple frames to allow the camera time to settle
             for i = 1:5
@@ -55,17 +63,17 @@ classdef Camera3D < handle
             % get actual data and convert into a format imshow can use
             colorData = color.get_data();
             colorImage = permute(reshape(colorData',[3,color.get_width(),color.get_height()]),[3 2 1]);
-            depthData = depth.get_data();
-            depthImage = permute(reshape(depthData',[3,depth.get_width(),depth.get_height()]),[3 2 1]);
+            % depthData = depth.get_data();
+            % depthImage = permute(reshape(depthData',[3,depth.get_width(),depth.get_height()]),[3 2 1]);
 
             % stop streaming
-            object.pipe.stop();
+            self.pipe.stop();
         end % snapshot
 
         function result = stream(self, inputFunction)
 
             % start streaming on an arbitrary camera with default settings
-            object.pipe.start(object.configuration);
+            self.pipe.start(self.configuration);
 
             % discard the first couple frames to allow the camera time to settle
             for i = 1:5
@@ -82,8 +90,8 @@ classdef Camera3D < handle
                 % get actual data and convert into a format imshow can use
                 colorData = color.get_data();
                 colorImage = permute(reshape(colorData',[3,color.get_width(),color.get_height()]),[3 2 1]);
-                depthData = depth.get_data();
-                depthImage = permute(reshape(depthData',[3,depth.get_width(),depth.get_height()]),[3 2 1]);
+                % depthData = depth.get_data();
+                % depthImage = permute(reshape(depthData',[3,depth.get_width(),depth.get_height()]),[3 2 1]);
 
                 [result, terminate] = inputFunction(colorImage, depthImage);
 
@@ -91,6 +99,9 @@ classdef Camera3D < handle
                     break
                 end
             end
+
+            % stop streaming
+            self.pipe.stop();
         end % stream
     end
 end

@@ -2,7 +2,7 @@
 addpath('./+realsense/');
 
 % Initialize YOLOv4 object detector
-yolov4 = yolov4ObjectDetector("csp-darknet53-coco");
+% yolov4 = yolov4ObjectDetector("csp-darknet53-coco");
 
 % Make Pipeline object to manage streaming
 pipe = realsense.pipeline();

@@ -38,6 +38,9 @@ classdef TransformPCStoCCS < handle
             % get the world coordinates xy of the checkerboard points of intersection
             object.pointsCCS = object.generateInCCS();
 
+            disp(object.pointsCCS(1,:))
+            disp(object.pointsCCS(6,:))
+
             % estimate an extrinsic transformation matrix
             % https://de.mathworks.com/help/vision/ref/estimateextrinsics.html#responsive_offcanvas
             object.extrinsics = estimateExtrinsics(object.pointsPCS, object.pointsCCS, object.cameraParameters.Intrinsics);
@@ -45,6 +48,13 @@ classdef TransformPCStoCCS < handle
             % check the transformed checkerboard diagonal against an ideal diagonal calculated from the checkerboard metadata
             score = object.checkPlausability();
             disp("Score: " + num2str(round(score,2)) + " %");
+
+
+            GenPointsCCS = img2world2d(object.pointsPCS, object.extrinsics, object.intrinsics);
+            
+            diff = object.pointsCCS - GenPointsCCS
+
+
         end % TransformPCStoRCS
 
         function extendToRCS(self, boardOriginRCS, boardCornerRCS)

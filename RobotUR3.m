@@ -5,7 +5,7 @@ classdef RobotUR3 < handle
         DEVICEPORT = 30003;
 
         % master ip and port
-        MASTERIP = '192.168.0.89';
+        MASTERIP = '172.20.10.5';
         MASTERPORT = 5000;
 
         % gripper ip and port
@@ -39,9 +39,9 @@ classdef RobotUR3 < handle
             object.inverseKinematic = InverseKinematic();
 
             % initialize socket connections
-            object.connectToDevice();
-            object.connectToMaster();
-            object.connectToGripper();
+            % object.connectToDevice();
+            % object.connectToMaster();
+            % object.connectToGripper();
         end % RobotUR3
 
         function moveJ(self, q)
@@ -120,16 +120,16 @@ classdef RobotUR3 < handle
             % create tcp/ip connection to master
             self.masterSocket = tcpclient(self.MASTERIP, self.MASTERPORT, "Timeout", 50);
 
-            configureCallback(self.masterSocket, "byte", 8, @self.receiveDataFromMaster)
+            configureCallback(self.masterSocket, "byte", 8, @self.recvDatafcn)
 
             pause(5);
 
             % test connection to master
-            recvData = read(client, 8, "uint8");
+            recvData = read(self.masterSocket, 8, "uint8");
             if recvData(1) == 1
                 disp("control bit received, connection to master successful")
                 com_data = [1,0,0,0,0,0,0,0];
-                send_com_data(client, com_data)
+                sendComData(self.masterSocket, com_data)
                 disp("send control bit")
                 disp(com_data)
             end
@@ -200,7 +200,7 @@ classdef RobotUR3 < handle
                         % Server is ready and started object detection
                         disp("start object detection")
                         com_data = [1,1,0,0,0,0,0,0];
-                        %send_com_data(src, com_data)
+                        %sendComData(src, com_data)
                         disp(processState.state)
                         % return
                     case 2
@@ -208,27 +208,27 @@ classdef RobotUR3 < handle
                         % Server found object and started gripping
                         disp("server started gripping and approaching filling position")
                         com_data = [1,2,1,1,0,0,0,0];
-                        send_com_data(src, com_data)
+                        sendComData(src, com_data)
                     case 3
                         testCounter = 3
                         % Server moved to pouring position
                         disp("Server ready to pour")
                         com_data = [1,3,1,1,0,0,0,0];
-                        %send_com_data(src, com_data)
+                        %sendComData(src, com_data)
                     case 4
                         testCounter = 4
                         % Server finished pouring and moving back to drop off
                         disp("Server finished pouring and moves back to drop off" + ...
                             "position")
                         com_data = [1,4,1,1,0,0,0,0];
-                        %send_com_data(src, com_data)
+                        %sendComData(src, com_data)
 
                         %         case 4
                         %             state = 4;
                         %             % Server released object
                         %             disp("Server released object")
                         %             com_data = [1,4,1,1,0,0,0,0];
-                        %             send_com_data(src, com_data)
+                        %             sendComData(src, com_data)
 
                     otherwise
                         processState.state = -1;
@@ -238,13 +238,10 @@ classdef RobotUR3 < handle
             elseif recvData(1) == 0
                 disp("Controllbit is incorrect, something went wrong")
             end
-
-
-            function send_com_data(client, com_data)
-                write(client, com_data(:), "uint8")
-            end
-
-
         end % receiveDataFromMaster
     end
 end
+
+function sendComData(client, com_data)
+write(client, com_data(:), "uint8")
+end % sendComData
