@@ -37,7 +37,7 @@ classdef RobotUR3 < handle
 
             % create an instance of an InverseKinematic object
             object.inverseKinematic = InverseKinematic();
-            
+
             % initialize socket connections
             object.connectToDevice();
             object.connectToMaster();
@@ -57,7 +57,7 @@ classdef RobotUR3 < handle
             self.checkMoving();
         end % moveJ
 
-        function movel(self, q)
+        function moveL(self, q)
 
             % construct the command line for UR3
             commandString = ['movej([' num2str(q(1)) ', ' num2str(q(2)) ', ' num2str(q(3)) ', ' num2str(q(4))...
@@ -182,7 +182,69 @@ classdef RobotUR3 < handle
             end
         end % checkMoving
 
-        function receiveDataFromMaster(self)
+        function recvDatafcn(self, src, ~)
+            global processState;
+            processState = StateClass;
+            global testCounter;
+            disp("Data recieved from server:")
+            recvData = read(src, 8, "uint8");
+            disp(recvData)
+
+            if recvData(1) == 1
+                disp("Controllbit is correct")
+                processState.state = recvData(2);
+                switch processState.state
+                    case 1
+                        testCounter = 1
+                        src.Counter = testCounter
+                        % Server is ready and started object detection
+                        disp("start object detection")
+                        com_data = [1,1,0,0,0,0,0,0];
+                        %send_com_data(src, com_data)
+                        disp(processState.state)
+                        % return
+                    case 2
+                        testCounter = 2
+                        % Server found object and started gripping
+                        disp("server started gripping and approaching filling position")
+                        com_data = [1,2,1,1,0,0,0,0];
+                        send_com_data(src, com_data)
+                    case 3
+                        testCounter = 3
+                        % Server moved to pouring position
+                        disp("Server ready to pour")
+                        com_data = [1,3,1,1,0,0,0,0];
+                        %send_com_data(src, com_data)
+                    case 4
+                        testCounter = 4
+                        % Server finished pouring and moving back to drop off
+                        disp("Server finished pouring and moves back to drop off" + ...
+                            "position")
+                        com_data = [1,4,1,1,0,0,0,0];
+                        %send_com_data(src, com_data)
+
+                        %         case 4
+                        %             state = 4;
+                        %             % Server released object
+                        %             disp("Server released object")
+                        %             com_data = [1,4,1,1,0,0,0,0];
+                        %             send_com_data(src, com_data)
+
+                    otherwise
+                        processState.state = -1;
+                        disp("Server send wrong status")
+                end
+
+            elseif recvData(1) == 0
+                disp("Controllbit is incorrect, something went wrong")
+            end
+
+
+            function send_com_data(client, com_data)
+                write(client, com_data(:), "uint8")
+            end
+
+
         end % receiveDataFromMaster
     end
 end

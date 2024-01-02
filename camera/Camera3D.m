@@ -37,7 +37,7 @@ classdef Camera3D < handle
             object.pipe.stop();
         end % Camera3D
 
-        function [colorImage, depthImage] = snapshot(self)
+        function [colorImage, depth] = snapshot(self)
 
             % start streaming on an arbitrary camera with default settings
             object.pipe.start(object.configuration);
