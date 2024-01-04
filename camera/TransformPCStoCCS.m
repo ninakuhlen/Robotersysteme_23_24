@@ -66,37 +66,64 @@ classdef TransformPCStoCCS < handle
             augPointsCCS = img2world2d(self.pointsPCS, self.extrinsics, self.intrinsics);
 
             % match orientation of ccs and rcs
-            vectorCCS = augPointsCCS(1,:) - augPointsCCS(6,:);
+            vectorCCS = augPointsCCS(6,:) - augPointsCCS(1,:);
             vectorCCS = vectorCCS / norm(vectorCCS);
             vectorCCS(3) = 0;
 
-            vectorRCS = self.pointsRCS(1,:) - self.pointsRCS(6,:);
+            vectorRCS = self.pointsRCS(6,:) - self.pointsRCS(1,:);
             vectorRCS = vectorRCS / norm(vectorRCS);
             vectorRCS(3) = 0;
 
-            % rotate the ccs vector by 180 degree around the x axis to match
-            % orientation of the z axes
-            rotationX = rotx(pi);
-            vectorCCS = rotationX * vectorCCS';
+            %% 3D-Version 
+            % % rotate the ccs vector by 180 degree around the x axis to match
+            % % orientation of the z axes
+            % rotationX = rotx(pi);
+            % vectorCCS = rotationX * vectorCCS';
+            % 
+            % angleZ = acos(dot(vectorCCS, vectorRCS));
+            % rotationZ = rotz(angleZ);
+            % 
+            % augPointsCCS(:,3) = 0;
+            % rotationMatrix =  rotationX * rotationZ;
+            % augPointsCCS = rotationMatrix * augPointsCCS';
+            % 
+            % augPointsCCS = augPointsCCS(:, 1:2);
+            % translationVector = self.pointsRCS(1,:) - augPointsCCS(1,:);
+            % 
+            % translationLength = norm(translationVector);
+            % disp("Distance CCS to RCS: " + num2str(round(translationLength)) + " mm");
+            % 
+            % transformationMatrix = eye(4);
+            % transformationMatrix(1:3, 1:3) = rotationMatrix;
+            % transformationMatrix(1:2, 4) = translationVector;
+            % 
+            % self.transformToRCS = rigidtform3d(transformationMatrix);
 
-            angleZ = acos(dot(vectorCCS, vectorRCS));
-            rotationZ = rotz(angleZ);
+            %% 2D-Version
+            % Transformation zwischen CCS und BCS
+            angleYCCS = atan((vectorCCS(1)/vectorCCS(2)));
+            rotationCCS_BCS = rotz(angleYCCS);
+            
+            translationCCS_BCS = augPointsCCS(1,:);
 
-            augPointsCCS(:,3) = 0;
-            rotationMatrix =  rotationX * rotationZ;
-            augPointsCCS = rotationMatrix * augPointsCCS';
+            transformationMatrixCCS_BCS = eye(4);
+            transformationMatrixCCS_BCS(1:3, 1:3) = rotationCCS_BCS;
+            transformationMatrixCCS_BCS(1:2, 4) = translationCCS_BCS;
 
-            augPointsCCS = augPointsCCS(:, 1:2);
-            translationVector = self.pointsRCS(1,:) - augPointsCCS(1,:);
+            % Transformation zwischen BCS und RCS
+            angleYRCS = atan((vectorRCS(1)/vectorRCS(2)));
+            rotationRCS_BCS = rotz(angleYRCS);
 
-            translationLength = norm(translationVector);
-            disp("Distance CCS to RCS: " + num2str(round(translationLength)) + " mm");
+            translationRCS_BCS = boardOriginRCS;
 
-            transformationMatrix = eye(4);
-            transformationMatrix(1:3, 1:3) = rotationMatrix;
-            transformationMatrix(1:2, 4) = translationVector;
+            transformationMatrixRCS_BCS = eye(4);
+            transformationMatrixRCS_BCS(1:3, 1:3) = rotationRCS_BCS;
+            transformationMatrixRCS_BCS(1:2, 4) = translationRCS_BCS;
 
-            self.transformToRCS = rigidtform3d(transformationMatrix);
+            transformationMatrixCCS_RCS = inv(transformationMatrixRCS_BCS) * (transformationMatrixCCS_BCS);
+            % vCCS = 
+            test = transformationMatrixCCS_RCS * [0; 0; 0; 1];
+
         end % extendToRCS
 
         function targetPointsRCS = apply(self, targetPointsPCS)
