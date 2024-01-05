@@ -9,7 +9,7 @@ classdef InverseKinematic < handle
         a = [0; 0; -0.24365; -0.21325; 0; 0];
 
         %         tcp_offset = 0.115;
-        d = [0.1519; 0; 0; 0.11235; 0.08535; (0.0819 + 0.115)];
+        d = [0.1519; 0; 0; 0.11235; 0.08535; (0.0819 + 0.180)];
         thetas = zeros(8,6);
         previousThetas = zeros(1,6);
         currentThetas = zeros(1,6);

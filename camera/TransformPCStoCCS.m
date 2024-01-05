@@ -8,7 +8,8 @@ classdef TransformPCStoCCS < handle
         cameraParameters
         intrinsics
         extrinsics
-        transformToRCS
+        transformCCS2BCS
+        transformBCS2RCS
         % checkerboard points in ...
         pointsPCS % ... pixel coordinates
         pointsBCS % ... board coordinates
@@ -29,6 +30,8 @@ classdef TransformPCStoCCS < handle
             [object.pointsPCS, object.dimensions] = detectCheckerboardPoints(image);
             object.dimensions = object.dimensions - 1;
 
+            object.pointsPCS
+
             % generate the coordinates of the points of intersection within the
             % checkerboard pattern. The unit is determined by the unit chosen in
             % squareSize.
@@ -36,10 +39,7 @@ classdef TransformPCStoCCS < handle
             object.pointsBCS = generateCheckerboardPoints(object.dimensions, object.edgeLength);
 
             % get the world coordinates xy of the checkerboard points of intersection
-            object.pointsCCS = object.generateInCCS();
-
-            disp(object.pointsCCS(1,:))
-            disp(object.pointsCCS(6,:))
+            object.pointsCCS = object.generateInCCS()
 
             % estimate an extrinsic transformation matrix
             % https://de.mathworks.com/help/vision/ref/estimateextrinsics.html#responsive_offcanvas
@@ -48,12 +48,6 @@ classdef TransformPCStoCCS < handle
             % check the transformed checkerboard diagonal against an ideal diagonal calculated from the checkerboard metadata
             score = object.checkPlausability();
             disp("Score: " + num2str(round(score,2)) + " %");
-
-
-            GenPointsCCS = img2world2d(object.pointsPCS, object.extrinsics, object.intrinsics);
-            
-            diff = object.pointsCCS - GenPointsCCS
-
 
         end % TransformPCStoRCS
 
@@ -74,69 +68,48 @@ classdef TransformPCStoCCS < handle
             vectorRCS = vectorRCS / norm(vectorRCS);
             vectorRCS(3) = 0;
 
-            %% 3D-Version 
-            % % rotate the ccs vector by 180 degree around the x axis to match
-            % % orientation of the z axes
-            % rotationX = rotx(pi);
-            % vectorCCS = rotationX * vectorCCS';
-            % 
-            % angleZ = acos(dot(vectorCCS, vectorRCS));
-            % rotationZ = rotz(angleZ);
-            % 
-            % augPointsCCS(:,3) = 0;
-            % rotationMatrix =  rotationX * rotationZ;
-            % augPointsCCS = rotationMatrix * augPointsCCS';
-            % 
-            % augPointsCCS = augPointsCCS(:, 1:2);
-            % translationVector = self.pointsRCS(1,:) - augPointsCCS(1,:);
-            % 
-            % translationLength = norm(translationVector);
-            % disp("Distance CCS to RCS: " + num2str(round(translationLength)) + " mm");
-            % 
-            % transformationMatrix = eye(4);
-            % transformationMatrix(1:3, 1:3) = rotationMatrix;
-            % transformationMatrix(1:2, 4) = translationVector;
-            % 
-            % self.transformToRCS = rigidtform3d(transformationMatrix);
-
-            %% 2D-Version
-            % Transformation zwischen CCS und BCS
-            angleYCCS = atan((vectorCCS(1)/vectorCCS(2)));
+            %% Transformation zwischen CCS und BCS
+            % sollte korrekt sein
+            angleYCCS = -atan2(vectorCCS(1), vectorCCS(2));
             rotationCCS_BCS = rotz(angleYCCS);
-            
+
             translationCCS_BCS = augPointsCCS(1,:);
 
-            transformationMatrixCCS_BCS = eye(4);
-            transformationMatrixCCS_BCS(1:3, 1:3) = rotationCCS_BCS;
-            transformationMatrixCCS_BCS(1:2, 4) = translationCCS_BCS;
+            self.transformCCS2BCS = eye(4);
+            self.transformCCS2BCS(1:3, 1:3) = rotationCCS_BCS;
+            self.transformCCS2BCS(1:2, 4) = translationCCS_BCS;
+            self.transformCCS2BCS = inv(self.transformCCS2BCS);
 
-            % Transformation zwischen BCS und RCS
-            angleYRCS = atan((vectorRCS(1)/vectorRCS(2)));
+            %% Transformation zwischen BCS und RCS
+            % sollte korrekt sein
+            % angleYRCS = atan2(vectorRCS(1), vectorRCS(2));
+            angleYRCS = -atan((vectorRCS(1)/ vectorRCS(2)));
             rotationRCS_BCS = rotz(angleYRCS);
 
             translationRCS_BCS = boardOriginRCS;
 
-            transformationMatrixRCS_BCS = eye(4);
-            transformationMatrixRCS_BCS(1:3, 1:3) = rotationRCS_BCS;
-            transformationMatrixRCS_BCS(1:2, 4) = translationRCS_BCS;
-
-            transformationMatrixCCS_RCS = inv(transformationMatrixRCS_BCS) * (transformationMatrixCCS_BCS);
-            % vCCS = 
-            test = transformationMatrixCCS_RCS * [0; 0; 0; 1];
-
+            self.transformBCS2RCS = eye(4);
+            self.transformBCS2RCS(1:3, 1:3) = rotationRCS_BCS;
+            self.transformBCS2RCS(1:2, 4) = translationRCS_BCS;
         end % extendToRCS
 
         function targetPointsRCS = apply(self, targetPointsPCS)
-
-            % apply transformation from pcs to ccs and augment the point
-            % coordinates
-            targetPointsCCS = img2world2d(double(targetPointsPCS), self.extrinsics, self.intrinsics);
+            % Get CCS coordinates from pixel coordinates
+            targetPointsCCS = img2world2d(double(targetPointsPCS), self.extrinsics, self.intrinsics)
             targetPointsCCS(:,4) = 1;
+            
+            % transform from CCS to BCS
+            targePointsBCS = self.transformCCS2BCS * targetPointsCCS'
 
-            % apply transformation from ccs to rcs and undo augmentation
-            targetPointsRCS = (self.transformToRCS.A * targetPointsCCS')';
-            targetPointsRCS = targetPointsRCS(:,1:3);
-        end
+            % flip y-axis because of left handed coordinate system (at
+            % least in 2D)
+            targePointsBCS(2,:) = - targePointsBCS(2,:);
+
+            % transform from BCS to RCS
+            targetPointsRCS = (self.transformBCS2RCS * targePointsBCS)';
+
+            % targetPointsRCS(:, 2) = - targetPointsRCS(:, 2);
+        end % apply
 
         function show(self, image)
              offset = 5;
