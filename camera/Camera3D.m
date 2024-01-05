@@ -93,7 +93,7 @@ classdef Camera3D < handle
                 % depthData = depth.get_data();
                 % depthImage = permute(reshape(depthData',[3,depth.get_width(),depth.get_height()]),[3 2 1]);
 
-                [result, terminate] = inputFunction(colorImage, depthImage);
+                [result, terminate] = inputFunction(colorImage, depth);
 
                 if terminate
                     break
