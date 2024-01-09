@@ -29,17 +29,23 @@ classdef RobotUR3 < handle
         % TODO: change from Kerze to actual home position!
         HOME = deg2rad([0.0, -90.0, 0.0, -90.0, -90, 0.0]);
 
+        % % inverse kinematic to calculate angle configurations
+        % inverseKinematic
+
         state
     end
     methods
         function object = RobotUR3()
 
+            % % create an instance of an InverseKinematic object
+            % object.inverseKinematic = InverseKinematic();
+
             % initialize socket connections
-            % object.connectToDevice();
-            object.connectToMaster();
+            object.connectToDevice();
+            % object.connectToMaster();
             % object.connectToGripper();
 
-            % object.moveJ(object.HOME);
+            object.moveJ(object.HOME);
         end % RobotUR3
 
         function moveJ(self, q)
@@ -120,20 +126,16 @@ classdef RobotUR3 < handle
         end % connectToDevice
 
         function connectToMaster(self)
-
-            disp('Establishing connection to master...\n');
-
             % establish connection to master via tcp/ip
             % ip of master robot
             % self.masterSocket = tcpclient(self.MASTERIP,self.MASTERPORT,"ConnectTimeout",30, "Timeout", 1)
             % local host
-            self.masterSocket = tcpclient('localhost',5000,"ConnectTimeout",30, "Timeout", 1);
+            self.masterSocket = tcpclient('localhost',5000,"ConnectTimeout",30, "Timeout", 1)
             % ip of test pc
             % self.masterSocket = tcpclient('192.168.0.77',5000,"ConnectTimeout",30, "Timeout", 1)
+            configureCallback(self.masterSocket, "byte", 1, @self.receiveDataFromConnection)
 
-            configureCallback(self.masterSocket, "byte", 1, @self.receiveDataFromConnection);
-            % configureCallback(self.masterSocket, "terminator", @self.receiveDataFromConnection);
-
+            pause(5);
 
             % test connection to master
             recvData = read(self.masterSocket, 8, "uint8");
@@ -144,8 +146,6 @@ classdef RobotUR3 < handle
                 disp("send control bit")
                 disp(com_data)
             end
-
-            disp('Master connection setup successful.');
         end % connectToMaster
 
         function connectToGripper(self)
@@ -169,7 +169,7 @@ classdef RobotUR3 < handle
             pause(2);
 
             fprintf(1, 'Connected to gripper.\n');
-            disp('Gripper setup successful.');
+            disp('Gripper setup successful.')
         end % connectToGripper
 
         function checkMoving(self)
@@ -196,17 +196,27 @@ classdef RobotUR3 < handle
 
                 clear socket;
             end
+
+
         end % checkMoving
 
         function receiveDataFromConnection(self, src, ~)
+            disp("Data recieved from server:")
             recvData = read(src, 8, "uint8");
+            disp(recvData)
 
             if recvData(1) == 1
                 disp("Controllbit is correct")
                 self.state = recvData(2);
-            elseif recvData(1) == 0
-                disp("Controllbit is incorrect, something went wrong")
-            end
+                switch self.state
+                    case 1
+                        % Server is ready and started object detection
+                        disp("start object detection")
+                        com_data = [1,1,0,0,0,0,0,0];
+                        %sendComData(src, com_data)
+                        disp(self.state)
+                        % return
+           
         end % receiveDataFromMaster
     end
 end
