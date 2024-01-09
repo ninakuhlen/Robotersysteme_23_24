@@ -45,7 +45,7 @@ classdef CupDetector < handle
                 image = imbinarize(image, "global");
                 image = imcomplement(image);
 
-                [centers, radii] = imfindcircles(image,[50 100],"Sensitivity", 0.90);
+                [centers, radii] = imfindcircles(image,[50 100],"Sensitivity", 0.95);
                 if ~isempty(centers)
                     imshow(colorImage);
                     viscircles(centers, radii,'EdgeColor','b');
