@@ -15,6 +15,11 @@ classdef TransformPCStoCCS < handle
         pointsBCS % ... board coordinates
         pointsCCS % ... camera coordinates
         pointsRCS % ... robot coordinates
+
+        x_values_lookup
+        expected_x_values_lookup
+        y_values_lookup
+        expected_y_values_lookup
     end
     methods
         function object = TransformPCStoCCS(image, cameraParameters, edgeLength)
@@ -48,7 +53,50 @@ classdef TransformPCStoCCS < handle
             % check the transformed checkerboard diagonal against an ideal diagonal calculated from the checkerboard metadata
             score = object.checkPlausability();
             disp("Score: " + num2str(round(score,2)) + " %");
-
+            
+            object.x_values_lookup = [467.41
+                486.87
+                584.5
+                647.65
+                663.06
+                667.72
+                672.22
+                672.66
+                701.61
+                720.09];
+            object.expected_x_values_lookup = [500.59
+                519.9
+                600.98
+                652.75
+                664.67
+                670.85
+                674.17
+                672.66
+                701.61
+                720.09
+                ];
+            object.y_values_lookup = [-215.34
+                -122.72
+                -11.39
+                -8.78
+                -5
+                -3.66
+                -1.5
+                7.86
+                87.32
+                148.89
+                ];
+            object.expected_y_values_lookup = [-192.91
+                -104.52
+                -8.25
+                -6.42
+                -2.95
+                1.09
+                4.67
+                8.55
+                77.42
+                131.47
+                ];
         end % TransformPCStoRCS
 
         function extendToRCS(self, boardOriginRCS, boardCornerRCS)
@@ -95,11 +143,11 @@ classdef TransformPCStoCCS < handle
 
         function targetPointsRCS = apply(self, targetPointsPCS)
             % Get CCS coordinates from pixel coordinates
-            targetPointsCCS = img2world2d(double(targetPointsPCS), self.extrinsics, self.intrinsics)
+            targetPointsCCS = img2world2d(double(targetPointsPCS), self.extrinsics, self.intrinsics);
             targetPointsCCS(:,4) = 1;
             
             % transform from CCS to BCS
-            targePointsBCS = self.transformCCS2BCS * targetPointsCCS'
+            targePointsBCS = self.transformCCS2BCS * targetPointsCCS';
 
             % flip y-axis because of left handed coordinate system (at
             % least in 2D)
@@ -109,7 +157,27 @@ classdef TransformPCStoCCS < handle
             targetPointsRCS = (self.transformBCS2RCS * targePointsBCS)';
 
             % targetPointsRCS(:, 2) = - targetPointsRCS(:, 2);
+
+            corrected_x_pos = interp1(self.x_values_lookup, self.expected_x_values_lookup, targetPointsRCS(1));
+            corrected_y_pos = interp1(self.y_values_lookup, self.expected_y_values_lookup, targetPointsRCS(2));
+            
+            targetPointsRCS = [corrected_x_pos, corrected_y_pos, targetPointsRCS(3)];
         end % apply
+
+        % function [correctedPointsRCS] = useLookUpTable(targetPointsRCS)
+        %     xLookupObserved = object.x_values_lookup;
+        %     xLookupExpected = object.expected_x_values_lookup;
+        %     xPos = targetPointsRCS(1, :);
+        % 
+        %     yLookupObserved = object.y_values_lookup;
+        %     yLookupExpected = object.expected_y_values_lookup;
+        %     yPos = targetPointsRCS(2, :);
+        % 
+        %     corrected_x_pos = interp1(xLookupObserved,xLookupExpected,xPos);
+        %     corrected_y_pos = interp1(yLookupObserved,yLookupExpected,yPos);
+        % 
+        %     correctedPointsRCS = [corrected_x_pos', corrected_y_pos', targetPointsRCS(3)]
+        % end % useLookUpTable
 
         function show(self, image)
              offset = 5;
@@ -265,5 +333,7 @@ classdef TransformPCStoCCS < handle
 
             score = 100 * approxDiagonal / idealDiagonal;
         end % checkPlausability
+
+        
     end
 end

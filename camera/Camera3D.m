@@ -43,6 +43,8 @@ classdef Camera3D < handle
 
             % stop streaming
             object.pipe.stop();
+
+            
         end % Camera3D
 
         function [colorImage, depth] = snapshot(self)
@@ -103,5 +105,7 @@ classdef Camera3D < handle
             % stop streaming
             self.pipe.stop();
         end % stream
+
+
     end
 end
