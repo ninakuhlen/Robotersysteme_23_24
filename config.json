@@ -1,0 +1,38 @@
+{
+  "paths": {
+    "camera_directory": ".\\camera",
+    "communication_directory": ".\\communication",
+    "camera_parameters": ".\\camera\\camera_parameters_lab",
+    "calibration_image": ".\\camera\\test images\\CaibrationImage.png"
+  },
+  "parameters": {
+    "edge_length": 30,
+    "board_origin_rcs": [
+      305.11,
+      82.61
+    ],
+    "board_corner_rcs": [
+      309.18,
+      -68.09
+    ],
+    "initial_gripper_position": [
+      0.0,
+      -1.5708,
+      -1.5708,
+      -1.5708,
+      -1.5708,
+      0.0
+    ],
+    "test_rotation": [
+      0.0,
+      1.5708,
+      0.0
+    ],
+    "cup_detection_type": "circle",
+    "cup_x_correction": 0,
+    "cup_y_correction": 25,
+    "cup_z_coordinate": 130,
+    "final_grip_height": 0.05,
+    "lift_grip_height": 0.10
+  }
+}
