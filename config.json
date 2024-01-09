@@ -30,7 +30,7 @@
     ],
     "cup_detection_type": "circle",
     "cup_x_correction": 0,
-    "cup_y_correction": 25,
+    "cup_y_correction": 0,
     "cup_z_coordinate": 130,
     "final_grip_height": 0.05,
     "lift_grip_height": 0.10
