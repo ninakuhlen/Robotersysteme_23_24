@@ -5,7 +5,7 @@ classdef RobotUR3 < handle
         DEVICEPORT = 30003;
 
         % master ip and port
-        MASTERIP = '172.20.10.5';
+        MASTERIP = '192.168.0.89';
         MASTERPORT = 5000;
 
         % gripper ip and port
@@ -29,23 +29,17 @@ classdef RobotUR3 < handle
         % TODO: change from Kerze to actual home position!
         HOME = deg2rad([0.0, -90.0, 0.0, -90.0, -90, 0.0]);
 
-        % % inverse kinematic to calculate angle configurations
-        % inverseKinematic
-
         state
     end
     methods
         function object = RobotUR3()
 
-            % % create an instance of an InverseKinematic object
-            % object.inverseKinematic = InverseKinematic();
-
             % initialize socket connections
-            object.connectToDevice();
-            % object.connectToMaster();
+            % object.connectToDevice();
+            object.connectToMaster();
             % object.connectToGripper();
 
-            object.moveJ(object.HOME);
+            % object.moveJ(object.HOME);
         end % RobotUR3
 
         function moveJ(self, q)
@@ -126,12 +120,20 @@ classdef RobotUR3 < handle
         end % connectToDevice
 
         function connectToMaster(self)
-            % create tcp/ip connection to master
-            self.masterSocket = tcpclient(self.MASTERIP, self.MASTERPORT, "Timeout", 50);
 
-            configureCallback(self.masterSocket, "byte", 8, @self.recvDatafcn)
+            disp('Establishing connection to master...\n');
 
-            pause(5);
+            % establish connection to master via tcp/ip
+            % ip of master robot
+            % self.masterSocket = tcpclient(self.MASTERIP,self.MASTERPORT,"ConnectTimeout",30, "Timeout", 1)
+            % local host
+            self.masterSocket = tcpclient('localhost',5000,"ConnectTimeout",30, "Timeout", 1);
+            % ip of test pc
+            % self.masterSocket = tcpclient('192.168.0.77',5000,"ConnectTimeout",30, "Timeout", 1)
+
+            configureCallback(self.masterSocket, "byte", 1, @self.receiveDataFromConnection);
+            % configureCallback(self.masterSocket, "terminator", @self.receiveDataFromConnection);
+
 
             % test connection to master
             recvData = read(self.masterSocket, 8, "uint8");
@@ -142,6 +144,8 @@ classdef RobotUR3 < handle
                 disp("send control bit")
                 disp(com_data)
             end
+
+            disp('Master connection setup successful.');
         end % connectToMaster
 
         function connectToGripper(self)
@@ -165,7 +169,7 @@ classdef RobotUR3 < handle
             pause(2);
 
             fprintf(1, 'Connected to gripper.\n');
-            disp('Gripper setup successful.')
+            disp('Gripper setup successful.');
         end % connectToGripper
 
         function checkMoving(self)
@@ -192,48 +196,14 @@ classdef RobotUR3 < handle
 
                 clear socket;
             end
-
-
         end % checkMoving
 
-        function recvDatafcn(self, src, ~)
-            disp("Data recieved from server:")
+        function receiveDataFromConnection(self, src, ~)
             recvData = read(src, 8, "uint8");
-            disp(recvData)
 
             if recvData(1) == 1
                 disp("Controllbit is correct")
                 self.state = recvData(2);
-                switch self.state
-                    case 1
-                        % Server is ready and started object detection
-                        disp("start object detection")
-                        com_data = [1,1,0,0,0,0,0,0];
-                        %sendComData(src, com_data)
-                        disp(self.state)
-                        % return
-                    case 2
-                        % Server found object and started gripping
-                        disp("server started gripping and approaching filling position")
-                        com_data = [1,2,1,1,0,0,0,0];
-                        sendComData(src, com_data)
-                    case 3
-                        % Server moved to pouring position
-                        disp("Server ready to pour")
-                        com_data = [1,3,1,1,0,0,0,0];
-                        %sendComData(src, com_data)
-                    case 4
-                        % Server finished pouring and moving back to drop off
-                        disp("Server finished pouring and moves back to drop off" + ...
-                            " position")
-                        com_data = [1,4,1,1,0,0,0,0];
-                        %sendComData(src, com_data)                
-
-                    otherwise
-                        self.state = -1;
-                        disp("Server send wrong status")
-                end
-
             elseif recvData(1) == 0
                 disp("Controllbit is incorrect, something went wrong")
             end
