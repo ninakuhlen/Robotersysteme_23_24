@@ -44,7 +44,7 @@ classdef TransformPCStoCCS < handle
             object.pointsBCS = generateCheckerboardPoints(object.dimensions, object.edgeLength);
 
             % get the world coordinates xy of the checkerboard points of intersection
-            object.pointsCCS = object.generateInCCS()
+            object.pointsCCS = object.generateInCCS();
 
             % estimate an extrinsic transformation matrix
             % https://de.mathworks.com/help/vision/ref/estimateextrinsics.html#responsive_offcanvas
@@ -156,28 +156,11 @@ classdef TransformPCStoCCS < handle
             % transform from BCS to RCS
             targetPointsRCS = (self.transformBCS2RCS * targePointsBCS)';
 
-            % targetPointsRCS(:, 2) = - targetPointsRCS(:, 2);
-
-            corrected_x_pos = interp1(self.x_values_lookup, self.expected_x_values_lookup, targetPointsRCS(1));
-            corrected_y_pos = interp1(self.y_values_lookup, self.expected_y_values_lookup, targetPointsRCS(2));
+            corrected_x_pos = interp1(self.x_values_lookup, self.expected_x_values_lookup, targetPointsRCS(1), "linear", "extrap");
+            corrected_y_pos = interp1(self.y_values_lookup, self.expected_y_values_lookup, targetPointsRCS(2), "linear", "extrap");
             
             targetPointsRCS = [corrected_x_pos, corrected_y_pos, targetPointsRCS(3)];
         end % apply
-
-        % function [correctedPointsRCS] = useLookUpTable(targetPointsRCS)
-        %     xLookupObserved = object.x_values_lookup;
-        %     xLookupExpected = object.expected_x_values_lookup;
-        %     xPos = targetPointsRCS(1, :);
-        % 
-        %     yLookupObserved = object.y_values_lookup;
-        %     yLookupExpected = object.expected_y_values_lookup;
-        %     yPos = targetPointsRCS(2, :);
-        % 
-        %     corrected_x_pos = interp1(xLookupObserved,xLookupExpected,xPos);
-        %     corrected_y_pos = interp1(yLookupObserved,yLookupExpected,yPos);
-        % 
-        %     correctedPointsRCS = [corrected_x_pos', corrected_y_pos', targetPointsRCS(3)]
-        % end % useLookUpTable
 
         function show(self, image)
              offset = 5;
