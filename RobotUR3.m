@@ -5,7 +5,8 @@ classdef RobotUR3 < handle
         DEVICEPORT = 30003;
 
         % master ip and port
-        MASTERIP = '192.168.0.89';
+        % MASTERIP = '192.168.0.89';
+        MASTERIP = 'localhost';
         MASTERPORT = 5000;
 
         % gripper ip and port
@@ -17,6 +18,7 @@ classdef RobotUR3 < handle
         % robot movement parameters
         a = 0.3; % acceleration
         v = 0.5; % velocity
+        % v = 0.25;
         t = 0; % time
         r = 0.001; % blend radius
 
@@ -26,8 +28,7 @@ classdef RobotUR3 < handle
         gripperSocket
 
         % hard coded home position
-        % TODO: change from Kerze to actual home position!
-        HOME = deg2rad([0.0, -90.0, 0.0, -90.0, -90, 0.0]);
+        HOME = deg2rad([180.0, -90.0, 0.0, -90.0, 90, 0.0]);
 
         state
     end
@@ -35,11 +36,11 @@ classdef RobotUR3 < handle
         function object = RobotUR3()
 
             % initialize socket connections
-            % object.connectToDevice();
+            object.connectToDevice();
             object.connectToMaster();
             % object.connectToGripper();
 
-            % object.moveJ(object.HOME);
+            object.moveJ(object.HOME);
         end % RobotUR3
 
         function moveJ(self, q)
@@ -127,7 +128,7 @@ classdef RobotUR3 < handle
             % ip of master robot
             % self.masterSocket = tcpclient(self.MASTERIP,self.MASTERPORT,"ConnectTimeout",30, "Timeout", 1)
             % local host
-            self.masterSocket = tcpclient('localhost',5000,"ConnectTimeout",30, "Timeout", 1);
+            self.masterSocket = tcpclient("127.0.0.1",5000,"ConnectTimeout",30, "Timeout", 1);
             % ip of test pc
             % self.masterSocket = tcpclient('192.168.0.77',5000,"ConnectTimeout",30, "Timeout", 1)
 

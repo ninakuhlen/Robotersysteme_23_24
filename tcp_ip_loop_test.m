@@ -1,7 +1,10 @@
+clear all
+clc
+
 %% TCP Client 8 bit array integer
 %function recvData()
 %client = tcpclient('192.168.0.135',5000,"Timeout",20)
-client = tcpclient('localhost',5000,"Timeout",20)
+client = tcpserver('localhost',5000,"Timeout",20)
 
 pause(5)
 configureCallback(client, "byte", 8, @recvDatafcn)

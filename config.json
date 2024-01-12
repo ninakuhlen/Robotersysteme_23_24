@@ -23,6 +23,16 @@
       -1.5708,
       0.0
     ],
+    "filling_position": [
+      0.250,
+      -0.550,
+      0.150
+    ],
+    "filling_orientation": [
+      2.775,
+      1.559,
+      1.207
+    ],
     "test_rotation": [
       0.0,
       1.5708,
@@ -31,8 +41,8 @@
     "cup_detection_type": "circle",
     "cup_x_correction": 0,
     "cup_y_correction": 0,
-    "cup_z_coordinate": 130,
+    "cup_z_coordinate": 150,
     "final_grip_height": 0.05,
-    "lift_grip_height": 0.10
+    "lift_grip_height": 0.150
   }
 }
