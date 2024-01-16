@@ -51,7 +51,7 @@ cupCenterPointRCS = cupCenterPointRCS / 1000;
 
 % return success
 
-
+device.answerMaster();
 
 if ENABLE_TCPIP
     waitfor(device, "state", 2);
@@ -73,7 +73,7 @@ device.moveJ(q);
 orientationA = [0.0, pi/2, 0.0]; % Rotationsvektor
 ik.get_thetas(cupCenterPointRCS, orientationA);
 q = ik.currentThetas;
-device.moveL(q)
+device.moveL(q);
 
 popupWindow = msgbox("Open Gripper and press OK to continue", "icon", "warn");
 waitfor(popupWindow);
@@ -91,11 +91,11 @@ waitfor(popupWindow);
 % move robot to position above located cup
 gripPos = cupCenterPointRCS;
 gripPos(3) = config.parameters.lift_grip_height;
-ik.get_thetas(gripPos, orientationA)
+ik.get_thetas(gripPos, orientationA);
 q = ik.currentThetas;
-device.moveL(q)
+device.moveL(q);
 
-
+device.answerMaster();
 
 if ENABLE_TCPIP
     waitfor(device, "state", 3);
@@ -109,12 +109,14 @@ disp("Step 3");
 knownRadiusPos = [0.5, 0, 0.35];
 ik.get_thetas(knownRadiusPos, orientationA)
 q = ik.currentThetas;
-device.moveL(q)
+device.moveL(q);
 
 % move to filling position
 q1_old = q(1);
 q(1) = deg2rad(105);
-device.moveJ(q)
+device.moveJ(q);
+
+device.answerMaster();
 
 if ENABLE_TCPIP
     waitfor(device, "state", 4);
@@ -132,14 +134,14 @@ gripPos = cupCenterPointRCS;
 gripPos(3) = config.parameters.lift_grip_height;
 ik.get_thetas(gripPos, orientationA)
 q = ik.currentThetas;
-device.moveL(q)
+device.moveL(q);
 
 % move robot to position above cup drop off point
 gripPos = cupCenterPointRCS;
 gripPos(3) = config.parameters.final_grip_height;
 ik.get_thetas(gripPos, orientationA)
 q = ik.currentThetas;
-device.moveL(q)
+device.moveL(q);
 
 popupWindow = msgbox("Open Gripper and press OK to continue", "icon", "warn");
 waitfor(popupWindow);
@@ -154,6 +156,8 @@ device.moveL(q)
 % go to Home position
 q_home = device.HOME;
 device.moveJ(q_home);
+
+device.answerMaster();
 
 % move to filling position
 % joint_angles = [103.54, -81.39, 97.06, -15.61, 88.02, 269.92]

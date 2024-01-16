@@ -31,6 +31,7 @@ classdef RobotUR3 < handle
         HOME = deg2rad([180.0, -90.0, 0.0, -90.0, 90, 0.0]);
 
         state
+        communicationData
     end
     methods
         function object = RobotUR3()
@@ -92,6 +93,10 @@ classdef RobotUR3 < handle
         function set.state(obj,val)
             obj.state = val;
         end
+
+        function answerMaster(self)
+            write(self.masterSocket, self.communicationData, "uint8");
+        end
     end
 
 
@@ -137,8 +142,8 @@ classdef RobotUR3 < handle
 
 
             % test connection to master
-            recvData = read(self.masterSocket, 8, "uint8");
-            if recvData(1) == 1
+            self.communicationData = read(self.masterSocket, 8, "uint8");
+            if self.communicationData(1) == 1
                 disp("control bit received, connection to master successful")
                 com_data = [1,0,0,0,0,0,0,0];
                 sendComData(self.masterSocket, com_data)
@@ -200,12 +205,12 @@ classdef RobotUR3 < handle
         end % checkMoving
 
         function receiveDataFromConnection(self, src, ~)
-            recvData = read(src, 8, "uint8");
+            self.communicationData = read(src, 8, "uint8");
 
-            if recvData(1) == 1
+            if self.communicationData(1) == 1
                 disp("Controllbit is correct")
-                self.state = recvData(2);
-            elseif recvData(1) == 0
+                self.state = self.communicationData(2);
+            elseif self.communicationData(1) == 0
                 disp("Controllbit is incorrect, something went wrong")
             end
         end % receiveDataFromMaster

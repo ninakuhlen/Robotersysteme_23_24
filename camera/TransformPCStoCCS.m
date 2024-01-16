@@ -35,8 +35,6 @@ classdef TransformPCStoCCS < handle
             [object.pointsPCS, object.dimensions] = detectCheckerboardPoints(image);
             object.dimensions = object.dimensions - 1;
 
-            object.pointsPCS
-
             % generate the coordinates of the points of intersection within the
             % checkerboard pattern. The unit is determined by the unit chosen in
             % squareSize.
