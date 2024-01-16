@@ -34,8 +34,5 @@ function connectionFcn(src, ~)
     pause;
     data = [1,4,1,1,0,0,0,0]
     write(src, data, "uint8")
-    pause;
-    data = [1,5,1,1,0,0,0,0]
-    write(src, data, "uint8")
     
 end
