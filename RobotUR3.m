@@ -5,10 +5,10 @@ classdef RobotUR3 < handle
         DEVICEPORT = 30003;
 
         % master ip and port
-        % MASTERIP = '192.168.0.232';
+        MASTERIP = '192.168.0.232';
 
         % master ip for test server
-        MASTERIP = 'localhost';
+        % MASTERIP = 'localhost';
         MASTERPORT = 5000;
 
         % gripper ip and port
