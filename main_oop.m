@@ -1,6 +1,9 @@
 clear all;
 
+% option to run script with external commands from master 
 ENABLE_TCPIP = true;
+
+% load relevant parameters from config file
 config = jsondecode(fileread('./config.json'));
 
 addpath(config.paths.camera_directory);
@@ -46,7 +49,7 @@ cupCenterPointRCS = cupCenterPointRCS(1:2);
 cupCenterPointRCS(3) = config.parameters.cup_z_coordinate;
 cupCenterPointRCS = cupCenterPointRCS / 1000;
 
-% return success
+% return success to master
 device.answerMaster();
 disp("Step 1 complete - Send confirmation of success to Master");
 
@@ -58,15 +61,14 @@ disp("Step 2 [Grip cup and move to pouring position]");
 % \\\\\\\\\\\\\\\\\\\\ 2 //////////////////// %
 % move to cup location and grap cup
 
+% augment home position to get approach position
 q = device.HOME;
 q(3) = deg2rad(90);
 
 % go to approach position
 device.moveJ(q);
 
-% q(5) = q(5) - deg2rad(90);
-% device.moveJ(q);
-
+% move gripper to position above cup
 orientationA = [0.0, pi/2, 0.0]; % Rotationsvektor
 ik.get_thetas(cupCenterPointRCS, orientationA);
 q = ik.currentThetas;
@@ -76,12 +78,12 @@ device.moveL(q);
 popupWindow = msgbox("Open Gripper and press OK to continue", "icon", "warn");
 waitfor(popupWindow);
 
+% move gripper to lower position
 gripPos = cupCenterPointRCS;
 gripPos(3) = config.parameters.final_grip_height;
 ik.get_thetas(gripPos, orientationA)
 q = ik.currentThetas;
 device.moveL(q)
-% device.moveL([cupCenterPointRCS(1), cupCenterPointRCS(2), cupCenterPointRCS(3), testRot(1), testRot(2), testRot(3)])
 
 % wait for user to ensure a closed gripper before resuming
 popupWindow = msgbox("Close Gripper and press OK to continue", "icon", "warn");
@@ -94,18 +96,7 @@ ik.get_thetas(gripPos, orientationA);
 q = ik.currentThetas;
 device.moveL(q);
 
-% device.answerMaster();
-% disp("Step 2 complete - Send confirmation of success to Master");
-% 
-% if ENABLE_TCPIP
-%     waitfor(device, "state", 3);
-% end
-% disp("Step 3 [Move cup to pouring position]");
-
-% \\\\\\\\\\\\\\\\\\\\ 3 //////////////////// %
-% move cup to pouring position
-
-% move robot end effector to known distance to axis 1
+% move robot end effector to known distance from axis 1
 knownRadiusPos = [0.553, 0, 0.24];
 ik.get_thetas(knownRadiusPos, orientationA);
 q = ik.currentThetas;
@@ -116,14 +107,7 @@ q1_old = q(1);
 q(1) = deg2rad(94);
 device.moveJ(q);
 
-% device.answerMaster();
-% disp("Step 3 complete - Send confirmation of success to Master");
-% 
-% if ENABLE_TCPIP
-%     waitfor(device, "state", 4);
-% end
-% disp("Step 4 [Move cup to drop off point]");
-
+% return success  to master
 device.answerMaster();
 disp("Step 2 complete - Send confirmation of success to Master");
 
@@ -132,6 +116,10 @@ if ENABLE_TCPIP
 end
 disp("Step 3 [Start pouring]");
 
+% \\\\\\\\\\\\\\\\\\\\ 3 //////////////////// %
+% pouring process
+
+% return success  to master
 device.answerMaster();
 
 disp("Step 3 complete - Send confirmation of success to Master");
@@ -143,9 +131,6 @@ disp("Step 4 [Move cup to drop off point]");
 
 % \\\\\\\\\\\\\\\\\\\\ 4 //////////////////// %
 % move robot to position above cup drop off point
-
-% set lower velocity for testing purposes
-% device.v = 0.1;
 
 % move robot to position above cup drop off point
 gripPos = cupCenterPointRCS;
@@ -161,6 +146,8 @@ ik.get_thetas(gripPos, orientationA);
 q = ik.currentThetas;
 device.moveL(q);
 
+% request user to open gripper to place cup at drop off point before
+% continuing
 popupWindow = msgbox("Open Gripper and press OK to continue", "icon", "warn");
 waitfor(popupWindow);
 
@@ -175,15 +162,7 @@ device.moveL(q);
 q_home = device.HOME;
 device.moveJ(q_home);
 
+% return success  to master
 device.answerMaster();
 disp("Step 4 complete - Send confirmation of success to Master");
 disp("Process finished")
-
-% move to filling position
-% joint_angles = [103.54, -81.39, 97.06, -15.61, 88.02, 269.92]
-% orientationB = [1.01, 1.321, -0.997];
-% % RPY = [1.635, 1.561, 0.339];
-% ik.get_thetas([0.15, -0.45, 0.25], [1.01, 1.321, -0.997])
-% q = ik.currentThetas;
-% device.moveL(q)
-% device.moveL([150.0, -450, 250, 1.01, 1.321, -0.997])
