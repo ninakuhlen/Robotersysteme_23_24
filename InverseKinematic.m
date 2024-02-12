@@ -171,9 +171,10 @@ classdef InverseKinematic < handle
                     % storing theta4
                     self.thetas(row + (4 * ink), 4) = theta4;
 
-                    self.thetas = real(self.thetas);
-                end
+                    self.thetas = real(self.thetas);        
+                end   
             end
+            self.thetas
             self.closestSolution();
             % self
         end % end function get_thetas
