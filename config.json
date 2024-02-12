@@ -3,7 +3,7 @@
     "camera_directory": ".\\camera",
     "communication_directory": ".\\communication",
     "camera_parameters": ".\\camera\\camera_parameters_lab",
-    "calibration_image": ".\\camera\\test images\\CaibrationImage.png"
+    "calibration_image": ".\\camera\\extrinsic calibration images\\CaibrationImage.png"
   },
   "parameters": {
     "edge_length": 30,
