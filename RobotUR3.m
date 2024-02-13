@@ -5,14 +5,16 @@ classdef RobotUR3 < handle
         DEVICEPORT = 30003;
 
         % master ip and port
-        MASTERIP = '192.168.0.232';
-        % MASTERIP = 'localhost';
+        % MASTERIP = '192.168.0.232';
+
+        % master ip for test server
+        MASTERIP = 'localhost';
         MASTERPORT = 5000;
 
         % gripper ip and port
-        GRIPPERIP = "";
-        GRIPPERPORT = 0;
-e
+        GRIPPERIP ='192.168.1.1';
+        GRIPPERPORT = 33;
+
     end
     properties
         % robot movement parameters
@@ -98,6 +100,7 @@ e
             disp(self.communicationData)
             write(self.masterSocket, self.communicationData, "uint8");
         end
+
     end
 
 
@@ -132,7 +135,7 @@ e
 
             % establish connection to master via tcp/ip
             % ip of master robot
-            self.masterSocket = tcpclient(self.MASTERIP,self.MASTERPORT,"ConnectTimeout",30, "Timeout", 1)
+            self.masterSocket = tcpclient(self.MASTERIP,self.MASTERPORT,"ConnectTimeout",30, "Timeout", 1);
             % local host
             % self.masterSocket = tcpclient("127.0.0.1",5000,"ConnectTimeout",30, "Timeout", 1);
             % ip of test pc

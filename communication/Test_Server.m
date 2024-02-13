@@ -1,9 +1,7 @@
 clear all
 [~,hostname] = system('hostname');
 hostname = string(strtrim(hostname));
-% address = "192.168.0.77"               % replace with IP-address of computer
-address = "localhost"
-% address = "172.20.10.5"
+address = "localhost";
 fprintf('Server-hostname: ')
 fprintf(hostname)
 
